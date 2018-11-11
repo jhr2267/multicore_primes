@@ -5,7 +5,7 @@
 #define TRILLION 1000000000000
 
 
-__global__ void trial_division_kernel(unsigned long long int n, int *ret){
+__global__ void trial_division_kernel_old(unsigned long long int n, int *ret){
 	unsigned long long int i = 5 + 6 * (threadIdx.x + blockIdx.x * blockDim.x);
 	__shared__ int local_ret;
 	if (threadIdx.x == 0){
@@ -24,6 +24,15 @@ __global__ void trial_division_kernel(unsigned long long int n, int *ret){
 
 
 
+__global__ void trial_division_kernel(unsigned long long int n, int *ret){
+	unsigned long long int i = 5 + 6 * (threadIdx.x + blockIdx.x * blockDim.x);
+	if (i*i <= n){
+		if (((n % i) == 0) || ((n % (i+2)) == 0))
+			*ret = 1;
+	}
+
+	
+}
 
 
 // method one
@@ -54,7 +63,7 @@ int trial_division(unsigned long long int n){
 	//cudaMalloc((void **)&d_n, sizeof(long long int));
 	//cudaMemcpy(d_n, n, sizeof(long long int), cudaMemcpyHostToDevice);
 	cudaMalloc((void **)&d_ret, sizeof(int));	
-
+	
 	trial_division_kernel<<<(root + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(n, d_ret);
 	cudaMemcpy(&ret, d_ret, sizeof(int), cudaMemcpyDeviceToHost);
 	//cudaFree(d_n); 
