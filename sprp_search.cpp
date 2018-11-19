@@ -6,21 +6,35 @@
 #include <utility>
 #include <queue>
 #include <vector>
+#include <algorithm>
 #include <bitset>
+#include "RandMT.h"
+#include "primesieve/primesieve.hpp"
 
-#define MAX_COMPOSITE 2 << 10
+#define MAX_COMPOSITE 1UL << 32
+#define NUM_PAIRS 5000
 
 using namespace std;
 
-class PQCompare {
-    public:
-    bool operator() (pair<unsigned long long, bool> p1, pair<unsigned long long, bool> p2) {
-        return p1.first ? (p2.first ? p1.second > p2.second : true) : (p2.first ? false : p1.second > p2.second);
+struct Pair {
+    unsigned a, b, first_composite;
+
+    Pair() {}
+
+    Pair(unsigned a, unsigned b, unsigned first_composite) {
+        this->a = a;
+        this->b = b;
+        this->first_composite = first_composite;
     }
+
+    struct compare {
+        bool operator() (const Pair &p1, const Pair &p2) {
+            return p1.first_composite > p2.first_composite;
+        }
+    };
 };
 
 typedef chrono::high_resolution_clock Clock;
-typedef priority_queue<pair<unsigned long long, bool>, vector<pair<unsigned long long, bool>>, PQCompare> pairPQ;
 
 // Sieve of Eratosthenese test
 // See: https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes#Pseudocode
@@ -91,9 +105,9 @@ bool witnessTest(unsigned long long a, unsigned long long d, unsigned long long 
     // Iterate r times (2^r * d = n - 1)
     while (d != n-1) { 
         x = (x * x) % n; 
-        d *= 2ULL; 
+        d *= 2; 
   
-        if (x == 1ULL) {
+        if (x == 1) {
             return false;
         }
         if (x == n-1) {
@@ -108,50 +122,108 @@ bool witnessTest(unsigned long long a, unsigned long long d, unsigned long long 
 // Returns true if both integers identify "n" as prime, i.e. "n" is a psuedo-prime for a-SPRP and b-SPRP
 // Returns false otherwise
 bool pairSPRPTest(unsigned long long a, unsigned long long b, unsigned long long d, unsigned long long n) {
+    // cout << a << " " << b << " " << d << " " << n << endl;
     if (witnessTest(a, d, n) && witnessTest(b, d, n)) {
         return true;
     }
     return false;
 }
 
-// Given an integer "a", chooses an integer "b" between "lower_bound" and "upper_bound", and runs pairSPRPTest on a list of known composites
-void testPairGivenA(unsigned k, unsigned lower_bound, unsigned upper_bound, unsigned long long a, 
-    bitset<MAX_COMPOSITE> &composites, unsigned *composites_d, pairPQ pq) {
+void generatePairs(unsigned a, unsigned count, vector<Pair> &pairs) {
+    RandMT r(time(NULL)); 
     
-    PQCompare pqcompare;
-    
-    for (unsigned long long b = lower_bound; b <= upper_bound; b++) {
+    for (unsigned i = 0; i < count; i++) {
+        pairs.emplace_back(a, r.randomMT(), 9);
+    }
+}
+
+
+pair<unsigned, bool> isComposite(vector<unsigned> &primes, unsigned num, unsigned pos) {
+    if (num == primes[pos]) {
+        return make_pair(pos+1, false);
+    } else if (num < primes[pos]) {
+        return make_pair(pos, true);
+    }
+}
+
+void findFirstComposites(vector<Pair> &pairs, vector<unsigned> &primes, unsigned composite_start, unsigned composite_end) {
+    if (pairs.empty()) {
+        return;
+    }
+
+    unsigned size = pairs.size();
+    for (unsigned i = 0; i < size; i++) {
+        if (i % (size/10) == 0) {
+            cout << ((float) i / size) * 100 << "% done" << endl;
+        }
+
         bool foundComposite = false;
-        for (unsigned i = 9; i < MAX_COMPOSITE; i += 2) {
-            if (pairSPRPTest(a, b, composites_d[i], i)) {
-                pair<unsigned long long, bool> res = make_pair(i, false);
-                if (pq.size() == k && pqcompare(pq.top(), res)) {
-                    pq.pop();
+        vector<unsigned>::iterator it = lower_bound(primes.begin(), primes.end(), pairs[i].first_composite);
+        unsigned pos = it - primes.begin();
+        pair<unsigned, bool> res = make_pair(pos, false);
+
+        for (unsigned j = pairs[i].first_composite; j <= composite_end; j += 2) {
+            res = isComposite(primes, j, res.first);
+            if (res.second) {
+                unsigned d = j - 1; 
+                while (d % 2 == 0) {
+                    d /= 2; 
                 }
-                pq.push(res);
-                foundComposite = true;
-                break;
+
+                if (pairSPRPTest(pairs[i].a, pairs[i].b, d, j)) {
+                    pairs[i].first_composite = j;
+                    foundComposite = true;
+                    break;
+                }
             }
         }
 
         if (!foundComposite) {
-            pq.push(make_pair(0, true));
+            pairs[i].first_composite = composite_end;
         }
     }
 }
 
-void single_test() {
-    pairPQ pq(PQCompare);
-    
-    bitset<MAX_COMPOSITE> test;
-    sieveOfEratosthenes(test);
-    removeEvenComposites(test);
-    unsigned * composites_d = calculateD(test);
-    for (int i=0; i<100; i++) {
-        if (test[i]) {
-            cout << i << " " << composites_d[i] << endl;
-        }
+
+void executeRound(vector<Pair> &pairs, vector<unsigned> &primes, unsigned composite_start, unsigned composite_end, float k) {
+    cout << "Starting round" << endl;
+
+    findFirstComposites(pairs, primes, composite_start, composite_end);
+
+    sort(pairs.begin(), pairs.end(), Pair::compare());
+
+    cout << "Size before truncating: " << pairs.size() << endl;
+    size_t resize_len = (size_t) (k * pairs.size()) < 10 ? 10 : (k * pairs.size());
+    pairs.resize(resize_len);
+    cout << "Size after truncating with factor " << k << ": " << pairs.size() << endl;
+
+
+    cout << "Top 10 pairs (a, b, first_composite): " << endl;
+    unsigned len =  pairs.size() < 10U ? pairs.size() : 10U;
+    for (unsigned i = 0; i < len; i++) {
+        cout << pairs[i].a << " " << pairs[i].b << " " << pairs[i].first_composite << endl;
     }
+
+    cout << endl;
+}
+
+void single_test() {
+    vector<unsigned> primes;
+    
+    cout << "Starting to generate all primes" << endl;
+    primesieve::generate_primes(MAX_COMPOSITE, &primes);
+    cout << "Finished generating all primes" << endl;
+
+    vector<Pair> pairs;
+
+    cout << "Starting to generate pairs" << endl;
+    generatePairs(15, NUM_PAIRS, pairs);
+    cout << "Finished generating pairs" << endl;
+
+    executeRound(pairs, primes, 9, 1000005, 0.3);
+    executeRound(pairs, primes, 1000005, 100000005, 0.3);
+    executeRound(pairs, primes, 100000005, 1000000005, 0.3);
+    executeRound(pairs, primes, 1000000005, 4294967295, 1);
 }
 
 int main(int argc, char const *argv[]) {
