@@ -11,7 +11,7 @@
 
 #include "mypair.h"
 #include "RandMT.h"
-#include "sprp_search.h"
+#include "sprp_search_cuda.h"
 #include "primesieve/primesieve.hpp"
 
 #define MAX_COMPOSITE 1UL << 32

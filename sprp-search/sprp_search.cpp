@@ -10,6 +10,7 @@
 #include <bitset>
 
 #include "RandMT.h"
+#include "mypair.h"
 #include "primesieve/primesieve.hpp"
 
 #define MAX_COMPOSITE 1UL << 32
@@ -19,24 +20,6 @@ using namespace std;
 
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::time_point<chrono::high_resolution_clock>  ClockTime;
-
-struct Pair {
-    unsigned a, b, first_composite;
-
-    Pair() {}
-
-    Pair(unsigned a, unsigned b, unsigned first_composite) {
-        this->a = a;
-        this->b = b;
-        this->first_composite = first_composite;
-    }
-
-    struct compare {
-        bool operator() (const Pair &p1, const Pair &p2) {
-            return p1.first_composite > p2.first_composite;
-        }
-    };
-};
 
 // Helper function for modular exponentiation.
 // Returns a^e (mode n)
@@ -87,52 +70,44 @@ bool witnessTest(unsigned long long a, unsigned long long d, unsigned long long 
 // Returns true if both integers identify "n" as prime, i.e. "n" is a psuedo-prime for a-SPRP and b-SPRP
 // Returns false otherwise
 bool pairSPRPTest(unsigned long long a, unsigned long long b, unsigned long long d, unsigned long long n) {
-    // cout << a << " " << b << " " << d << " " << n << endl;
     if (witnessTest(a, d, n) && witnessTest(b, d, n)) {
         return true;
     }
     return false;
 }
 
-void generatePairs(unsigned a, unsigned count, vector<Pair> &pairs) {
+void generatePairs(unsigned count, vector<MyPair> &pairs) {
     RandMT r(time(NULL)); 
     
     for (unsigned i = 0; i < count; i++) {
-        pairs.emplace_back(a, r.randomMT(), 9);
+        pairs.emplace_back(r.randomMT(), r.randomMT(), 9, 4);
     }
 }
 
 
-pair<unsigned, bool> isComposite(vector<unsigned> &primes, unsigned num, unsigned pos) {
-    if (num == primes[pos]) {
-        return make_pair(pos+1, false);
+bool isComposite(vector<unsigned> &primes, unsigned num, MyPair &pair) {
+    if (num == primes[pair.first_prime_pos]) {
+        pair.first_prime_pos += 1;
+        return false;
     } else {
-        return make_pair(pos, true);
+        return true;
     }
 }
 
-void findFirstComposites(vector<Pair> &pairs, vector<unsigned> &primes, unsigned composite_end) {
+void findFirstComposites(vector<MyPair> &pairs, vector<unsigned> &primes, unsigned composite_end) {
     if (pairs.empty()) {
         return;
     }
 
     unsigned size = pairs.size();
     for (unsigned i = 0; i < size; i++) {
-        if (i % (size/10) == 0) {
-            cout << ((float) i / size) * 100 << "% done" << endl;
-        }
-
         bool foundComposite = false;
-        vector<unsigned>::iterator it = lower_bound(primes.begin(), primes.end(), pairs[i].first_composite);
-        unsigned pos = it - primes.begin();
-        pair<unsigned, bool> res = make_pair(pos, false);
-
+    
         for (unsigned j = pairs[i].first_composite; j <= composite_end; j += 2) {
-            res = isComposite(primes, j, res.first);
-            if (res.second) {
+            if (isComposite(primes, j, pairs[i])) {
                 unsigned d = j - 1; 
                 while (d % 2 == 0) {
-                    d /= 2; 
+                    d /= 2;
                 }
 
                 if (pairSPRPTest(pairs[i].a, pairs[i].b, d, j)) {
@@ -150,13 +125,13 @@ void findFirstComposites(vector<Pair> &pairs, vector<unsigned> &primes, unsigned
 }
 
 
-long long executeRound(vector<Pair> &pairs, vector<unsigned> &primes, unsigned composite_end, float k) {
+long long executeRound(vector<MyPair> &pairs, vector<unsigned> &primes, unsigned composite_end, float k) {
     cout << "Starting round" << endl;
 
     ClockTime begin = Clock::now();
     
     findFirstComposites(pairs, primes, composite_end);
-    sort(pairs.begin(), pairs.end(), Pair::compare());
+    sort(pairs.begin(), pairs.end(), MyPair::compare());
     
     ClockTime end = Clock::now();
     long long duration = chrono::duration_cast<chrono::nanoseconds>(end - begin).count();
@@ -184,9 +159,9 @@ void single_test() {
     primesieve::generate_primes(MAX_COMPOSITE, &primes);
     cout << "Finished generating all primes" << endl;
 
-    vector<Pair> pairs;
+    vector<MyPair> pairs;
     cout << "Starting to generate " << NUM_PAIRS << " pairs" << endl;
-    generatePairs(15, NUM_PAIRS, pairs);
+    generatePairs(NUM_PAIRS, pairs);
     cout << "Finished generating " << NUM_PAIRS << " pairs" << endl;
 
     long long totalDuration = 0;

@@ -8,11 +8,7 @@
 #include <vector>
 
 #include "mypair.h"
-#include "sprp_search.h"
-
-#define MAX_COMPOSITE 1UL << 24
-#define NUM_PAIRS 50000
-#define NUM_THREADS 512
+#include "sprp_search_cuda.h"
 
 using namespace thrust;
 
@@ -70,8 +66,6 @@ __host__ __device__ bool pairSPRPTest(unsigned long long a, unsigned long long b
     }
     return false;
 }
-
-
 
 __host__ __device__ bool isComposite(unsigned *primes, unsigned num, MyPair &mypair) {
     if (num == primes[mypair.first_prime_pos]) {
