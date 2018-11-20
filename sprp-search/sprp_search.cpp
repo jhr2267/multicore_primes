@@ -13,7 +13,7 @@
 #include "primesieve/primesieve.hpp"
 
 #define MAX_COMPOSITE 1UL << 32
-#define NUM_PAIRS 50000
+#define NUM_PAIRS 500000
 
 using namespace std;
 
