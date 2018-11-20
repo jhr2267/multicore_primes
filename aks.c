@@ -171,16 +171,13 @@ int nCrModpLucas(int n, int r, int p)
 //*************************************
 
 int aks(unsigned long long int n){
-	////printf("%llu n \n", n);
 	if (n <= 1)
 		return 0;
 
 	// step 1 check if perfect power
 	int b; double a;
 	for (b = 2; b <= log(n)/log(2); b++){
-		//printf("%d b \n", b);
 		a = pow(n, 1/(double)b);
-		//printf("%f a \n", a);
 		if (a == floor(a))
 			return 0;
 	}
@@ -189,22 +186,16 @@ int aks(unsigned long long int n){
 	// Find the smallest r such that Or(n) > (log2 n)^2
 	double maxk = pow((log(n)/log(2)), 2);
 	double maxr = MAX(3, pow((log(n)/log(2)), 5));
-	//printf("maxk %f \n", maxk);
-	//printf("maxr %f \n", maxr);
+
 	int nextR = 1;
 	int r, k;
 	for (r = 2; (nextR && (r<maxr)); r++){
-		//printf("r %d \n", r);
 		nextR = 0;
 		for (k = 1; ((!nextR)&& (k <= maxk)); k ++){
-			//printf("k %d \n", k);
-			//nextR = (((int_pow(n,k) % r) == 1)  ||  ((int_pow(n,k) % r) == 0));
 			nextR = ((power_mod(n,k,r) == 1)  ||  (power_mod(n,k,r) == 0));
 		}
 	}
 	r --;
-
-	///printf("r %d \n", r);
 
 	// step 3
 	// If 1 < gcd(a,n) < n for some a ≤ r, output composite.
@@ -226,29 +217,21 @@ int aks(unsigned long long int n){
 	int max = floor((log(n)/log(2)) * sqrt(eulerPhi(r)));
 
 	int diff = n-r;
-	// int A[diff];
-	// for (i = 0; i < diff; i++){
-	// 	A[i] = (combi(n,n-i) % n);
-	// 	printf("apow %d \n", A[i]);
-	// } 
-
 	long long int sum = 0;
 	int inta;
+	// this for loop is the crux of the algorithm
+	// each value of a is tested after the polynomial division
+	// the reason I was able to implement this for even moderate values is becuase the polynomials are of regular form
+	// instead of doing the entire polynomial division, notice that the answers are always in regular form,
+	// because the polymod eliminates most of the terms
+	// the answer in general is a^n + (nCr % n)*a^(n-r) - a
 	for (inta=1; inta <= max; inta++){
-		///printf("inta %d \n", inta);
 		sum = 0;
-		// for (i = 0; i < diff; i++){
-		// 	sum += (A[i] * int_pow(inta,i));
-		// }
-
-		///sum += ((combi(n,r) % n) * int_pow(a,diff));
-		///printf("sum %llu \n", sum);
-		///sum = 0;
 		sum += nCrModpLucas(n,r,n) * int_pow(a,diff);
 		sum += power_mod_long(inta, n, n);
 		sum -= inta;
 		if ((sum % n) != 0){
-			printf("here\n");
+			//printf("here\n");
 			return 0;
 		}
 	}

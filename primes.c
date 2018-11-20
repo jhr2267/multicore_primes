@@ -4,7 +4,11 @@
 #define MILLION 1000000
 #include <time.h> 
 
-// method one
+//*************************************
+//
+//			Trial Division
+//
+//*************************************
 // this is a slight optimization of most naieve algorithm
 // see  https://en.wikipedia.org/wiki/Primality_test#Pseudocode
 int trial_division(unsigned long long int n){
@@ -25,11 +29,11 @@ int trial_division(unsigned long long int n){
 }
 
 
-
-// idea- prepare a large table via sieve of eratosthenes in parallel
-// use that with trial division method
-
-
+//*************************************
+//
+//			Main
+//
+//*************************************
 
 int main(void){
 

@@ -8,24 +8,12 @@
 int firstprimes[FIRSTPRIMENUM];
 
 
-__global__ void trial_division_kernel_old(unsigned long long int n, int *ret){
-	unsigned long long int i = 5 + 6 * (threadIdx.x + blockIdx.x * blockDim.x);
-	__shared__ int local_ret;
-	if (threadIdx.x == 0){
-		local_ret = 0;
-	}
-	if (i*i <= n){
-		if (((n % i) == 0) || ((n % (i+2)) == 0))
-			atomicAdd(&local_ret, 1);
-	}
-	__syncthreads();
-	
-	if (threadIdx.x == 0)
-		atomicAdd(ret, local_ret);
-	
-}
 
-
+//*************************************
+//
+//			Kernel
+//
+//*************************************
 
 __global__ void trial_division_kernel(unsigned long long int n, int *ret){
 	unsigned long long int i = 5 + 6 * (threadIdx.x + blockIdx.x * blockDim.x);
@@ -38,31 +26,29 @@ __global__ void trial_division_kernel(unsigned long long int n, int *ret){
 }
 
 
-// method one
+//*************************************
+//
+//			Trial Division
+//
+//*************************************
 // this is a slight optimization of most naieve algorithm
 // see  https://en.wikipedia.org/wiki/Primality_test#Pseudocode
 int trial_division(unsigned long long int n){
-	//printf("number is %d\n", n);
 	if (n <= 1)
 		return 0;
 	else if (n <= 3)
 		return 1;
 	else if (((n % 2) == 0) || ((n % 3) == 0))
 		return 0;
-	//unsigned long long int i = 5;
 
 	long int root = sqrt(n);
 	int ret= 0;
-	//long long int *d_n;
 	int *d_ret;
-	//cudaMalloc((void **)&d_n, sizeof(long long int));
-	//cudaMemcpy(d_n, n, sizeof(long long int), cudaMemcpyHostToDevice);
 	cudaMalloc((void **)&d_ret, sizeof(int));	
 	
 	trial_division_kernel<<<(root + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(n, d_ret);
 	cudaMemcpy(&ret, d_ret, sizeof(int), cudaMemcpyDeviceToHost);
-	//cudaFree(d_n); 
-	//printf("returned %d\n",ret);	
+
 	if (ret)
 		return 0;
 
@@ -70,19 +56,21 @@ int trial_division(unsigned long long int n){
 
 }
 
+//*************************************
+//
+//		Trial Division with Sieve
+//
+//*************************************
 
-// idea- prepare a large table via sieve of eratosthenes in parallel
-// use that with trial division method
 int trial_division_sieve(unsigned long long int n){
-	//printf("number is %d\n", n);
 	if (n <= 1)
 		return 0;
 	else if (n <= 3)
 		return 1;
 	//else if (((n % 2) == 0) || ((n % 3) == 0))
 	//	return 0;
-	//unsigned long long int i = 5;
 
+	// the sieve makes the commented lines above redundant
 	int i;
 	for (int i = 0; i < P; i++){
 		if ((n % firstprimes[i]) == 0)
@@ -91,22 +79,23 @@ int trial_division_sieve(unsigned long long int n){
 
 	long int root = sqrt(n);
 	int ret= 0;
-	//long long int *d_n;
 	int *d_ret;
-	//cudaMalloc((void **)&d_n, sizeof(long long int));
-	//cudaMemcpy(d_n, n, sizeof(long long int), cudaMemcpyHostToDevice);
 	cudaMalloc((void **)&d_ret, sizeof(int));	
 	
 	trial_division_kernel<<<(root + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK,THREADS_PER_BLOCK>>>(n, d_ret);
-	cudaMemcpy(&ret, d_ret, sizeof(int), cudaMemcpyDeviceToHost);
-	//cudaFree(d_n); 
-	//printf("returned %d\n",ret);	
+	cudaMemcpy(&ret, d_ret, sizeof(int), cudaMemcpyDeviceToHost);	
 	if (ret)
 		return 0;
 
 	return 1;
 
 }
+
+//*************************************
+//
+//			Helper Functions
+//
+//*************************************
 
 int trial_division_c(unsigned long long int n){
 	if (n <= 1)
@@ -125,8 +114,6 @@ int trial_division_c(unsigned long long int n){
 
 }
 
-
-
 void init_firstprimes(){
 	int i=2, numprime=0;
 	while(numprime<FIRSTPRIMENUM){
@@ -141,13 +128,11 @@ void init_firstprimes(){
 
 
 
-
-
-
-
-
-
-
+//*************************************
+//
+//			Main
+//
+//*************************************
 
 int main(void){
 
