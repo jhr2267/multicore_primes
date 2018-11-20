@@ -9,7 +9,7 @@ parallel: sprp_search_cuda.o
 sprp_search_cuda.o:
 	nvcc -c -arch=compute_35 -code=sm_35 sprp_search_cuda.cu mypair.cpp
 
-run: 
+run:
 	./program
 
 clean:

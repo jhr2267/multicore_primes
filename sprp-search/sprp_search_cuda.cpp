@@ -50,11 +50,11 @@ long long executeRound(vector<MyPair> &pairs, vector<unsigned> &primes, unsigned
     return duration;
 }
 
-void generatePairs(unsigned a, unsigned count, vector<MyPair> &pairs) {
+void generatePairs(unsigned count, vector<MyPair> &pairs) {
     RandMT r(time(NULL)); 
     
     for (unsigned i = 0; i < count; i++) {
-        pairs.emplace_back(a, r.randomMT(), 9, 4);
+        pairs.emplace_back(r.randomMT(), r.randomMT(), 9, 4);
     }
 }
 
@@ -67,7 +67,7 @@ void single_test() {
 
     vector<MyPair> pairs;
     cout << "Starting to generate " << NUM_PAIRS << " pairs" << endl;
-    generatePairs(15, NUM_PAIRS, pairs);
+    generatePairs(NUM_PAIRS, pairs);
     cout << "Finished generating " << NUM_PAIRS << " pairs" << endl;
 
     long long totalDuration = 0;
