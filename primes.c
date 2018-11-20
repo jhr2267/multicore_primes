@@ -24,9 +24,6 @@ int trial_division(unsigned long long int n){
 
 }
 
-int wilsons_algorithm(unsigned long long int n){
-
-}
 
 
 // idea- prepare a large table via sieve of eratosthenes in parallel
