@@ -5,7 +5,7 @@ class MyPair {
     public:
     unsigned a, b, first_composite, first_prime_pos;
 
-    MyPair() {}
+    MyPair();
 
     MyPair(unsigned a, unsigned b, unsigned first_composite, unsigned first_prime_pos);
 

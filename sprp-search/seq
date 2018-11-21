@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH -J seq
+#SBATCH -o seq%j
+#SBATCH -N 2
+#SBATCH -n 4
+#SBATCH -p gpu
+#SBATCH -t 12:00:00
+#SBATCH -A EE-382C-EE-361C-Mult
+#SBATCH --mail-user=nich.jang@utexas.edu
+#SBATCH --mail-type=begin
+#SBATCH --mail-type=end
+./program

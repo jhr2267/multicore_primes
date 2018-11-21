@@ -5,10 +5,16 @@
 #include <thrust/execution_policy.h>
 #include <thrust/pair.h>
 #include <cuda.h>
+#include <time.h>
 #include <vector>
 
 #include "mypair.h"
 #include "sprp_search_cuda.h"
+
+#define ROUND_ONE_END 1000005
+#define ROUND_TWO_END 100000005
+#define ROUND_THREE_END 1000000005
+#define ROUND_FOUR_END 4294967295
 
 using namespace thrust;
 
@@ -112,7 +118,45 @@ class findFirstCompositesPairFunctor
         }
 };
 
-void findFirstComposites(std::vector<MyPair> &pairs, std::vector<unsigned> &primes, unsigned composite_end) {
+
+// Needed so thrust does not issue an error
+__host__ __device__ MyPair::MyPair() {}
+
+struct compare {
+    __host__ __device__ bool operator() (const MyPair &p1, const MyPair &p2) {
+        return p1.first_composite > p2.first_composite;
+    }
+};
+
+double findFirstComposites(device_vector<MyPair> &d_pairs, unsigned *d_primes_ptr, unsigned composite_end, float k) {
+    printf("Starting round\n");
+    clock_t begin = clock();
+
+    for_each(thrust::device, d_pairs.begin(), d_pairs.end(), findFirstCompositesPairFunctor(d_primes_ptr, composite_end));
+    sort(thrust::device, d_pairs.begin(), d_pairs.end(), compare());
+
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Round Time: %f seconds\n", time_spent);
+
+    printf("Size before truncating: %zd\n", d_pairs.size());
+    size_t resize_len = (size_t) (k * d_pairs.size()) < 10 ? 10 : (k * d_pairs.size());
+    d_pairs.resize(resize_len);
+    printf("Size after truncating with factor %f: %zd\n", k, d_pairs.size());
+
+
+    printf("Top 10 pairs (a, b, first_composite): \n");
+    unsigned len =  d_pairs.size() < 10U ? d_pairs.size() : 10U;
+    for (unsigned i = 0; i < len; i++) {
+        device_ptr<MyPair> devPtr = &d_pairs[i];
+        MyPair *pair = devPtr.get();
+        printf("%d %d %d\n", pair->a, pair->b, pair->first_composite);
+    }
+
+    return time_spent;
+}
+
+void executeFourRounds(std::vector<MyPair> &pairs, std::vector<unsigned> &primes, float k) {
     if (pairs.empty()) {
         return;
     }
@@ -121,7 +165,11 @@ void findFirstComposites(std::vector<MyPair> &pairs, std::vector<unsigned> &prim
     device_vector<unsigned> d_primes(primes);
     unsigned *d_primes_ptr = thrust::raw_pointer_cast(d_primes.data());
 
-    for_each(thrust::device, d_pairs.begin(), d_pairs.end(), findFirstCompositesPairFunctor(d_primes_ptr, composite_end));
+    double totalDuration = 0;
+    totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_ONE_END, k);
+    totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_TWO_END, k);
+    // totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_THREE_END, k);
+    // totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_FOUR_END, k);
 
-    thrust::copy(d_pairs.begin(), d_pairs.end(), pairs.begin());
+    printf("Total running time was: %f seconds\n", totalDuration);
 }

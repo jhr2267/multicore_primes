@@ -4,6 +4,6 @@
 #include "mypair.h"
 #include <vector>
 
-void findFirstComposites(std::vector<MyPair> &pairs, std::vector<unsigned> &primes, unsigned composite_end);
+void executeFourRounds(std::vector<MyPair> &pairs, std::vector<unsigned> &primes, float k);
 
 #endif
