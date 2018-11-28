@@ -16,6 +16,7 @@
 
 #define MAX_COMPOSITE 1UL << 32
 #define NUM_PAIRS 500000
+#define FIRST_NUMBER_LIMIT 10000
 
 using namespace std;
 
@@ -23,7 +24,7 @@ void generatePairs(unsigned count, vector<MyPair> &pairs) {
     RandMT r(time(NULL)); 
     
     for (unsigned i = 0; i < count; i++) {
-        pairs.emplace_back(r.randomMT(), r.randomMT(), 9, 4);
+        pairs.emplace_back(r.randomMT() % FIRST_NUMBER_LIMIT, r.randomMT(), 9, 4);
     }
 }
 

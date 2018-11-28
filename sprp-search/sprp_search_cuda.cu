@@ -144,13 +144,12 @@ double findFirstComposites(device_vector<MyPair> &d_pairs, unsigned *d_primes_pt
     d_pairs.resize(resize_len);
     printf("Size after truncating with factor %f: %zd\n", k, d_pairs.size());
 
-
-    printf("Top 10 pairs (a, b, first_composite): \n");
     unsigned len =  d_pairs.size() < 10U ? d_pairs.size() : 10U;
+    std::vector<MyPair> top10(len);
+    copy_n(d_pairs.begin(), len, top10.begin());
+    printf("Top 10 pairs (a, b, first_composite): \n");
     for (unsigned i = 0; i < len; i++) {
-        device_ptr<MyPair> devPtr = &d_pairs[i];
-        MyPair *pair = devPtr.get();
-        printf("%d %d %d\n", pair->a, pair->b, pair->first_composite);
+        printf("%u %u %u\n", top10[i].a, top10[i].b, top10[i].first_composite);
     }
 
     return time_spent;
@@ -168,8 +167,8 @@ void executeFourRounds(std::vector<MyPair> &pairs, std::vector<unsigned> &primes
     double totalDuration = 0;
     totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_ONE_END, k);
     totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_TWO_END, k);
-    // totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_THREE_END, k);
-    // totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_FOUR_END, k);
+    totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_THREE_END, k);
+    totalDuration += findFirstComposites(d_pairs, d_primes_ptr, ROUND_FOUR_END, k);
 
     printf("Total running time was: %f seconds\n", totalDuration);
 }
