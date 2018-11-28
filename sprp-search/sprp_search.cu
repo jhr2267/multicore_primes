@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "mypair.h"
-#include "sprp_search_cuda.h"
+#include "sprp_search.h"
 
 #define MAX_COMPOSITE 1UL << 32
 #define NUM_PAIRS 500000

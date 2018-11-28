@@ -4,6 +4,7 @@
         "utility": "cpp",
         "chrono": "cpp",
         "ostream": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "vector": "cpp"
     }
 }
