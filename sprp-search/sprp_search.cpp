@@ -129,7 +129,7 @@ void findFirstComposites(vector<MyPair> &pairs, vector<unsigned> &primes, unsign
 MyPair::MyPair() {}
 
 long long executeRound(vector<MyPair> &pairs, vector<unsigned> &primes, unsigned composite_end, float k) {
-    cout << "Starting round" << endl;
+    cout << "Starting sequential round" << endl;
 
     ClockTime begin = Clock::now();
     

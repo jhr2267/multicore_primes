@@ -129,7 +129,7 @@ struct compare {
 };
 
 double findFirstComposites(device_vector<MyPair> &d_pairs, unsigned *d_primes_ptr, unsigned composite_end, float k) {
-    printf("Starting round\n");
+    printf("Starting parallel round\n");
     clock_t begin = clock();
 
     for_each(thrust::device, d_pairs.begin(), d_pairs.end(), findFirstCompositesPairFunctor(d_primes_ptr, composite_end));
